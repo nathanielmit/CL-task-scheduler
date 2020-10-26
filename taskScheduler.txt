@@ -1,0 +1,30 @@
+* start application *
+Welcome to the task scheduler!
+Type 'login' or 'register' to perform the respective action:
+- login
+Enter username:
+- exampleUsername
+Enter password:
+- examplePassword
+You successfully logged in!
+What would you like to do? Type 'help' for options.
+- help
+Commands:
+'list tasks' - List all tasks
+'create task' - Create task
+'delete task' - Delete task
+What would you like to do? Type 'help for options.
+- create task
+Enter task name:
+- CS452 project
+Enter date (mm/dd/yyyy hh:mm):
+- 10/30/2020 10:00
+Enter description:
+- Create application with SQL database
+Task created!
+What would you like to do? Type 'help' for options.
+- list tasks
+10/30/2020 10:00 -- CS452 project
+Create an application with SQL database
+What would you like to do? Type 'help' for options.
+
