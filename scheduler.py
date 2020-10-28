@@ -16,8 +16,12 @@ def getAllTask(db, task):
         return 0
 
 
-def deleteTask(conn, task):
-    return
+def deleteTask(conn, event_id):
+    sql = 'DELETE FROM Event WHERE eventID=?'
+    cur = conn.cursor()
+    cur.execute(sql, (event_id,))
+    conn.commit()
+    return True
 
 
 def createTask(conn, task):
@@ -172,6 +176,13 @@ def main():
 
         if userInput == "delete task":
             print("delete task")
+            event_id = input("Type event id: ")
+            deleted = deleteTask(conn, event_id)
+            if deleted:
+                print("Successfully deleted!")
+            else:
+                print("Fail to delete!")
+
         if userInput == "help":
             print("help")
 
