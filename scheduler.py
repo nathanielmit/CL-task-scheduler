@@ -1,7 +1,32 @@
 #!/usr/bin/env python
+import datetime
 import sys, os
 import time
 import sqlite3
+import uuid
+import prettytable
+
+
+def getAllTask(db, task):
+    db.execute("SELECT * FROM Event WHERE username=?", (task,))
+    rows = db.fetchall()
+    if len(rows) > 0:
+        return rows
+    else:
+        return 0
+
+
+def deleteTask(conn, task):
+    return
+
+
+def createTask(conn, task):
+    sql = ''' INSERT OR IGNORE INTO Event(eventID, username, title, location, time, date, bold, description)
+              VALUES(?,?,?,?,?,?,?,?) '''
+    curr = conn.cursor()
+    curr.execute(sql, task)
+    conn.commit()
+    return True
 
 
 def loginUer(db, user):
@@ -63,6 +88,7 @@ def main():
     db = conn.cursor()
     createTables(db)
     authenticated = False
+    username = None
     while not authenticated:
         print("Would you like to login or register?")
         userInput = input("type 'login' or 'register'")
@@ -101,12 +127,55 @@ def main():
     while userInput != "quit":
         if userInput == "list tasks":
             print("list tasks")
+            task = (username)
+            rows = getAllTask(db, task)
+
+            if len(rows) > 0:
+                table = prettytable.PrettyTable(["eventID", "username", "title", "location", "time", "date", "bold",
+                                                 "description"])
+
+                for i in range(len(rows)):
+                    row = []
+                    curr_row = rows[i]
+                    for j in range(len(curr_row)):
+                        row.append(curr_row[j])
+                    table.add_row(row)
+
+                print(table)
+            else:
+                print("You have no task! Please add some task")
+
         if userInput == "create task":
             print("create task")
+            event_id = str(uuid.uuid1())
+            title = input("Title: ")
+            location = input("Location: ")
+
+            # Gotta set this the right way
+            curr_time = "Test time"
+            curr_date = "Test date"
+            userInput = input("Is this task important? y or n")
+
+            bold = False
+            if userInput == "y":
+                bold = True
+
+            description = input("Description: ")
+
+            task = (event_id, username, title, location, curr_time, curr_date, bold, description)
+            successful = createTask(conn, task)
+
+            if successful:
+                print("Successfully created task")
+            else:
+                print("Fail to create task")
+
         if userInput == "delete task":
             print("delete task")
         if userInput == "help":
             print("help")
+
+        userInput = input("What do you like to do?")
 
     return
 
