@@ -6,84 +6,114 @@ import sqlite3
 import uuid
 import prettytable
 
+# TODO: DISPLAY REMINDERS WHEN USERS LOG IN
+# TODO: DISPLAY WELCOME TO USER WHEN THEY LOG IN
+# TODO: Test all reminder functionality
 
-def getAllTask(db, task):
-    db.execute("SELECT * FROM Event WHERE username=?", (task,))
-    rows = db.fetchall()
+def getAllReminders(db, username):
+    db.execute("SELECT * FROM Reminder WHERE username=?", (username,))
+    return(db.fetchall())
+
+def printReminders(db, username):
+    rows = getAllReminders(db, username)
+    table = ""
     if len(rows) > 0:
-        return rows
+        table = prettytable.PrettyTable(["taskID", "username", "title", "datetime","description"])
+        for row in rows:
+            table.add_row(row)
+
+    print(table)
+    return
+
+def getTodaysReminders(db, username):
+    db.execute("SELECT * FROM Reminder WHERE username=?", (username,))
+    # yourdatetime.date() == datetime.today().date()
+    rows = db.fetchAll()
+    for row in rows:
+        print(row)
+    return
+
+def createReminder(db, reminder):
+    sql = ''' INSERT INTO Reminder(name, datetime)
+              VALUES(?,?,?,?,?) '''
+    db.execute(sql, reminder)
+    return
+
+def deleteReminder(db, reminderToDelete):
+    sql = ''' DELETE FROM Reminder WHERE username=? AND title=? '''
+    result = db.execute(sql, taskToDelete)
+    if result.rowcount > 0:
+        return True
     else:
-        return 0
+        return False
+
+def getAllTask(db, username):
+    db.execute("SELECT * FROM Task WHERE username=?", (username,))
+    return(db.fetchall())
+
+def printTasks(db, username):
+    rows = getAllTask(db, username)
+    table = ""
+    if len(rows) > 0:
+        table = prettytable.PrettyTable(["taskID", "username", "title", "datetime","description"])
+        for row in rows:
+            table.add_row(row)
+
+    print(table)
+    return
+
+def deleteTask(db, taskToDelete):
+    sql = ''' DELETE FROM Task WHERE username=? AND title=? '''
+    result = db.execute(sql, taskToDelete)
+    if result.rowcount > 0:
+        return True
+    else:
+        return False
 
 
-def deleteTask(conn, event_id):
-    sql = 'DELETE FROM Event WHERE eventID=?'
-    cur = conn.cursor()
-    cur.execute(sql, (event_id,))
-    conn.commit()
-    return True
+def createTask(db, task):
+    sql = ''' INSERT INTO Task(taskID, username, title, datetime, description)
+              VALUES(?,?,?,?,?) '''
+    db.execute(sql, task)
+    return
 
 
-def createTask(conn, task):
-    sql = ''' INSERT OR IGNORE INTO Event(eventID, username, title, location, time, date, bold, description)
-              VALUES(?,?,?,?,?,?,?,?) '''
-    curr = conn.cursor()
-    curr.execute(sql, task)
-    conn.commit()
-    return True
-
-
-def loginUer(db, user):
-    db.execute("SELECT * FROM Users WHERE username=? AND passwordHash=?", user)
+def loginUser(db, user):
+    db.execute("SELECT * FROM User WHERE username=? AND password=?", user)
     rows = db.fetchall()
-
     if len(rows) > 0:
         return True
     else:
         return False
 
 
-def registerUser(conn, user):
-    sql = ''' INSERT OR IGNORE INTO Users(username,name,email,passwordHash)
-              VALUES(?,?,?,?) '''
-    curr = conn.cursor()
-    curr.execute(sql, user)
-    conn.commit()
-    return True
-
-
-def convertTimeToPythonFormat(userTime):
-    # takes user's mm/dd/yyyy hh:mm and turns it into a python time format
+def registerUser(db, user):
+    sql = ''' INSERT INTO User(username,name,password) VALUES(?,?,?) '''
+    db.execute(sql, user)
     return
-
-
-def convertTimeToUserFormat(pythonTime):
-    return
-
 
 def createTables(db):
-    db.execute('''CREATE TABLE IF NOT EXISTS Users (
+    db.execute('''CREATE TABLE IF NOT EXISTS User (
         username text PRIMARY KEY,
         name text NOT NULL,
         password text NOT NULL
         );''')
 
-    db.execute('''CREATE TABLE IF NOT EXISTS Event (
-        eventID text PRIMARY KEY,
+    db.execute('''CREATE TABLE IF NOT EXISTS Task (
+        taskID text PRIMARY KEY,
         username text,
         title text,
-        location text,
-        datetime text,
-        description text
+        datetime date,
+        description text,
+        CONSTRAINT unq UNIQUE (username, title)
         ); ''')
 
-    db.execute('''CREATE TABLE IF NOT EXISTS Calendar (
-        dateID text PRIMARY KEY,
-        calendarDate text,
-        monthNo int,
-        dayOfWeek int
-        );''')
-
+    db.execute('''CREATE TABLE IF NOT EXISTS Reminder (
+        reminderID integer PRIMARY KEY AUTOINCREMENT,
+        name text, 
+        datetime date
+    );''')
+     
     return
 
 
@@ -95,15 +125,16 @@ def main():
     username = None
     while not authenticated:
         print("Would you like to login or register?")
-        userInput = input("type 'login' or 'register'")
+        userInput = input("type 'login' or 'register'\n")
         if userInput == "login":
-            username = input("Enter username:")
-            password = input("Enter password:")
+            username = input("Enter username: ")
+            password = input("Enter password: ")
 
             # Read username and password from database
             # Try to authenticate, if successful set authenticated to True
             user = (username, password)
-            logged_in = loginUer(db, user)
+            logged_in = loginUser(db, user)
+            conn.commit()
             if logged_in:
                 authenticated = True
                 print("You successfully logged in!")
@@ -111,83 +142,82 @@ def main():
                 print("Login failed!")
 
         if userInput == "register":
-            username = input("Enter username:")
-            email = input("Enter email:")
-            # Check to make sure username isn't taken
-            name = input("Enter name:")
-            password = input("Enter password:")
-            # Store information in database
-            # Makes a User object and insert to Users table
-            # Tells user if registration was successful
-            new_user = (username, name, email, password)
-            registered = registerUser(conn, new_user)
-            if registered:
+            username = input("Enter username: ")
+            name = input("Enter name: ")
+            password = input("Enter password: ")
+            new_user = (username, name, password)
+            registerUser(db, new_user)
+            conn.commit()
+            if db.lastrowid < 1:
+                print("Registration failed!")
+            else:
                 authenticated = True
                 print("You've successfully registered!")
-            else:
-                print("Registration failed!")
 
-    userInput = input("What do you like to do?")
+    userInput = input("What would you like to do?\n")
     while userInput != "quit":
+        # Print all user tasks
         if userInput == "list tasks":
-            print("list tasks")
-            task = (username)
-            rows = getAllTask(db, task)
-
-            if len(rows) > 0:
-                table = prettytable.PrettyTable(["eventID", "username", "title", "location", "time", "date", "bold",
-                                                 "description"])
-
-                for i in range(len(rows)):
-                    row = []
-                    curr_row = rows[i]
-                    for j in range(len(curr_row)):
-                        row.append(curr_row[j])
-                    table.add_row(row)
-
-                print(table)
-            else:
-                print("You have no task! Please add some task")
-
+            printTasks(db, username)
+        
+        # Create task
         if userInput == "create task":
-            print("create task")
-            event_id = str(uuid.uuid1())
+            task_id = str(uuid.uuid1())
             title = input("Title: ")
-            location = input("Location: ")
-
-            # Gotta set this the right way
-            curr_time = "Test time"
-            curr_date = "Test date"
-            userInput = input("Is this task important? y or n")
-
-            bold = False
-            if userInput == "y":
-                bold = True
-
+            date = datetime.datetime.strptime(input("Enter date and time (mm/dd/yyyy HH:MM): "), "%m/%d/%Y %H:%M")
             description = input("Description: ")
 
-            task = (event_id, username, title, location, curr_time, curr_date, bold, description)
-            successful = createTask(conn, task)
+            task = (task_id, username, title, date, description)
+            createTask(db, task)
+            print("Successfully created task")
 
-            if successful:
-                print("Successfully created task")
-            else:
-                print("Fail to create task")
-
+        # Delete a task
         if userInput == "delete task":
-            print("delete task")
-            event_id = input("Type event id: ")
-            deleted = deleteTask(conn, event_id)
+            # Get tasks to print
+            print("Your tasks:\n")
+            printTasks(db, username)
+
+            taskName = input("Enter name of task to delete: ")
+            print("Going to delete: ", username, taskName)
+            taskToDelete = (username, taskName)
+            deleted = deleteTask(db, taskToDelete)
+            conn.commit()
             if deleted:
                 print("Successfully deleted!")
             else:
-                print("Fail to delete!")
+                print("Failed to delete!")
+        # Print all user reminders
+        if userInput == "list reminders":
+            printReminders(db, username)
+        
+        # Create task
+        if userInput == "create reminder":
+            name = input("Title: ")
+            date = datetime.datetime.strptime(input("Enter date and time (mm/dd/yyyy HH:MM): "), "%m/%d/%Y %H:%M")
 
+            reminder = (name, date)
+            createReminder(db, reminder)
+            print("Successfully created reminder")
+
+        # Delete a task
+        if userInput == "delete reminder":
+            # Get tasks to print
+            print("Your tasks:\n")
+            printReminders(db, username)
+
+            reminderName = input("Enter name of reminder to delete: ")
+            reminderToDelete = (username, reminderName)
+            deleted = deleteReminder(db, reminderToDelete)
+            conn.commit()
+            if deleted:
+                print("Successfully deleted!")
+            else:
+                print("Failed to delete!")
         if userInput == "help":
-            print("help")
+            print("commands:\nlist tasks, create task, delete task")
 
-        userInput = input("What do you like to do?")
-
+        userInput = input("What would you like to do?\n")
+    db.close()
     return
 
 
