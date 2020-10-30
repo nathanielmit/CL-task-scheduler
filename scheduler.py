@@ -25,14 +25,18 @@ def printReminders(db, username):
     print(table)
     return
 
+def getUserName(db, username):
+    db.execute("SELECT name FROM User WHERE username=?", (username,))
+    return db.fetchone()[0]
+
 def getTodaysReminders(db, username):
     db.execute("SELECT * FROM Reminder WHERE username=?", (username,))
     # yourdatetime.date() == datetime.today().date()
-    rows = db.fetchAll()
+    rows = db.fetchall()
     if len(rows) > 0:
         print("Your reminders for today:")
     for row in rows:
-        print(row)
+        print(row[2],"at",row[3])
     return
 
 def createReminder(db, reminder):
@@ -141,6 +145,9 @@ def main():
             if logged_in:
                 authenticated = True
                 print("You successfully logged in!")
+                name = getUserName(db, username)
+                print("Thanks for logging in, " + name + "!")
+                getTodaysReminders(db, username)
             else:
                 print("Login failed!")
 
