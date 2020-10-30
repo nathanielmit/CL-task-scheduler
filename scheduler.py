@@ -18,7 +18,7 @@ def printReminders(db, username):
     rows = getAllReminders(db, username)
     table = ""
     if len(rows) > 0:
-        table = prettytable.PrettyTable(["taskID", "username", "title", "datetime","description"])
+        table = prettytable.PrettyTable(["taskID", "username", "name", "datetime"])
         for row in rows:
             table.add_row(row)
 
@@ -29,19 +29,21 @@ def getTodaysReminders(db, username):
     db.execute("SELECT * FROM Reminder WHERE username=?", (username,))
     # yourdatetime.date() == datetime.today().date()
     rows = db.fetchAll()
+    if len(rows) > 0:
+        print("Your reminders for today:")
     for row in rows:
         print(row)
     return
 
 def createReminder(db, reminder):
-    sql = ''' INSERT INTO Reminder(name, datetime)
-              VALUES(?,?,?,?,?) '''
+    sql = ''' INSERT INTO Reminder(username, name, datetime)
+              VALUES(?,?,?) '''
     db.execute(sql, reminder)
     return
 
 def deleteReminder(db, reminderToDelete):
-    sql = ''' DELETE FROM Reminder WHERE username=? AND title=? '''
-    result = db.execute(sql, taskToDelete)
+    sql = ''' DELETE FROM Reminder WHERE username=? AND name=? '''
+    result = db.execute(sql, reminderToDelete)
     if result.rowcount > 0:
         return True
     else:
@@ -110,6 +112,7 @@ def createTables(db):
 
     db.execute('''CREATE TABLE IF NOT EXISTS Reminder (
         reminderID integer PRIMARY KEY AUTOINCREMENT,
+        username,
         name text, 
         datetime date
     );''')
@@ -192,10 +195,10 @@ def main():
         
         # Create task
         if userInput == "create reminder":
-            name = input("Title: ")
+            name = input("Name: ")
             date = datetime.datetime.strptime(input("Enter date and time (mm/dd/yyyy HH:MM): "), "%m/%d/%Y %H:%M")
 
-            reminder = (name, date)
+            reminder = (username, name, date)
             createReminder(db, reminder)
             print("Successfully created reminder")
 
@@ -214,7 +217,7 @@ def main():
             else:
                 print("Failed to delete!")
         if userInput == "help":
-            print("commands:\nlist tasks, create task, delete task")
+            print("commands:\nlist tasks, create task, delete task, ")
 
         userInput = input("What would you like to do?\n")
     db.close()
